@@ -149,9 +149,9 @@ Flusso: "fai la demo per <nome attività>" → Code legge il prospect → costru
 
 Regole per Claude Code
 
-	•	Sempre: leggere questa specifica prima di iniziare; una schermata alla volta; usare le skill di frontend installate; verificare a 390px e 1440px; leggere i valori fissi dalle tabelle; usare solo la chiave publishable.
-	•	Chiedere prima: modifiche a tabelle, colonne, trigger, RLS (si fanno in chat con Claude, non da Code); librerie oltre a supabase-js; schermate o funzioni non elencate.
-	•	Mai: secret key o password nel repo; creare utenti o attivare la registrazione; cancellare righe di interazioni; costruire cose di "Fuori dalla v1".
+	•	Sempre: leggere questa specifica prima di iniziare; una schermata alla volta, in quest'ordine: 1) Login + struttura base (supabase-js, sessione, navigazione, manifest e icona), 2) Oggi, 3) Lista prospect, 4) Scheda prospect, senza passare alla successiva finché la precedente non è verificata; usare le skill di frontend installate; verificare a 390px e 1440px; leggere i valori fissi dalle tabelle; usare solo la chiave publishable.
+	•	Chiedere prima: librerie oltre a supabase-js; schermate o funzioni non elencate.
+	•	Mai: modifiche al database (niente tabelle nuove, colonne, trigger, RLS, funzioni, migrazioni né SQL: il backend è già fatto, eventuali modifiche si fanno in chat con Claude, non da Code); salvare una chiamata con update fatti a mano invece che con registra_chiamata; secret key o password nel repo; creare utenti o attivare la registrazione; cancellare righe di interazioni; costruire cose di "Fuori dalla v1".
 
 Fuori dalla v1
 
