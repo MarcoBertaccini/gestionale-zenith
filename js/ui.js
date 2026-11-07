@@ -68,3 +68,28 @@ export function errorBox(retry, what = 'i prospect') {
 export function normalize(s) {
   return (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
+
+/**
+ * Dialog modale (foglio dal basso sul telefono). Esc, Annulla e tocco sullo
+ * sfondo chiudono; alla chiusura il dialog si rimuove e il focus torna dove era.
+ */
+export function openSheet(title, body, { labelId = `sheet-${Math.random().toString(36).slice(2, 8)}`, initialFocus } = {}) {
+  const opener = document.activeElement;
+  const dialog = h('dialog', { class: 'sheet', 'aria-labelledby': labelId },
+    h('h2', { class: 'sheet-title', id: labelId }, title),
+    body);
+  dialog.addEventListener('close', () => {
+    dialog.remove();
+    if (opener?.isConnected) opener.focus();
+  });
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  (document.getElementById('main') ?? document.body).append(dialog);
+  dialog.showModal();
+  if (initialFocus) initialFocus.focus();
+  return dialog;
+}
+
+/** Campo con etichetta: field('id', 'Etichetta', input, ...extra) */
+export function field(id, label, input, ...extra) {
+  return h('div', { class: 'field' }, h('label', { for: id }, label), input, ...extra);
+}

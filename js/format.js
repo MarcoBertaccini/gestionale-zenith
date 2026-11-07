@@ -38,3 +38,22 @@ function toDate(value) {
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
+/**
+ * Data 'YYYY-MM-DD' a n giorni da oggi.
+ * Con lavorativi = true salta sabato e domenica (es. venerdì +1 → lunedì).
+ */
+export function addDaysISO(n, lavorativi = false, from = new Date()) {
+  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  if (!lavorativi) {
+    d.setDate(d.getDate() + n);
+  } else {
+    let left = n;
+    while (left > 0) {
+      d.setDate(d.getDate() + 1);
+      const wd = d.getDay();
+      if (wd !== 0 && wd !== 6) left--;
+    }
+  }
+  return todayISO(d);
+}
