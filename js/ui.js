@@ -93,3 +93,8 @@ export function openSheet(title, body, { labelId = `sheet-${Math.random().toStri
 export function field(id, label, input, ...extra) {
   return h('div', { class: 'field' }, h('label', { for: id }, label), input, ...extra);
 }
+
+// Messaggio da mostrare alla schermata successiva (es. dopo un'eliminazione)
+let flash = null;
+export const setFlash = (msg) => { flash = msg; };
+export const takeFlash = () => { const f = flash; flash = null; return f; };

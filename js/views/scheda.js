@@ -1,7 +1,7 @@
 // Scheda prospect: dati modificabili per gruppi, storico, azioni.
 import { h } from '../dom.js';
 import { formatDate, formatDateTime, todayISO } from '../format.js';
-import { STATI, statoBadge, statoNome, errorBox, phoneIcon, telHref } from '../ui.js';
+import { STATI, statoBadge, statoNome, errorBox, phoneIcon, telHref, openSheet, setFlash } from '../ui.js';
 import { getEsiti, getMotiviPerso, getOrigini, getTagSito, getProfili } from '../lookups.js';
 import { registraChiamata, segnaDemoInviata, aggiungiNota } from './scheda-azioni.js';
 
@@ -162,7 +162,7 @@ export default async function scheda(main, { sb, params }) {
       head,
       h('div', { class: 'scheda-grid' },
         h('div', { class: 'scheda-side' }, status, next, actionBar, storico),
-        form));
+        h('div', { class: 'scheda-main' }, form, dangerZone())));
 
     window.scrollTo(0, scrollY);
   }
@@ -371,6 +371,50 @@ export default async function scheda(main, { sb, params }) {
     const extra = key === 'telefono' || key === 'sito' || key === 'link_demo' || key === 'email'
       ? fieldLink(key, v) : null;
     return { input, get, el: h('div', { class: 'field' }, h('label', { for: fid }, label), input, extra) };
+  }
+
+  // ---------- eliminazione ----------
+  function dangerZone() {
+    return h('section', { class: 'danger-zone', 'aria-labelledby': 'danger-title' },
+      h('h2', { class: 'section-title', id: 'danger-title' }, 'Elimina prospect'),
+      h('p', {}, 'Cancella il prospect con tutto lo storico e i tag. Non si può annullare.'),
+      h('button', { type: 'button', class: 'btn btn-danger-outline', onclick: onElimina }, 'Elimina prospect'));
+  }
+
+  function onElimina() {
+    const nome = prospect.nome_attivita;
+    const error = h('p', { class: 'form-error', role: 'alert', hidden: true });
+    const cancel = h('button', { type: 'button', class: 'btn btn-secondary' }, 'Annulla');
+    const confirm = h('button', { type: 'button', class: 'btn btn-danger' }, 'Elimina');
+    const body = h('div', { class: 'form' },
+      h('p', {}, 'Stai per eliminare ', h('strong', {}, nome), ' con tutte le chiamate, le note e i tag. Non si può annullare.'),
+      error,
+      h('div', { class: 'dialog-actions' }, cancel, confirm));
+    // Il focus parte su Annulla: l'azione sicura
+    const dialog = openSheet('Eliminare il prospect?', body, { labelId: 'del-title', initialFocus: cancel });
+    dialog.setAttribute('role', 'alertdialog');
+    cancel.addEventListener('click', () => dialog.close());
+
+    confirm.addEventListener('click', async () => {
+      error.hidden = true;
+      confirm.disabled = true;
+      confirm.textContent = 'Eliminazione…';
+      const { data, error: err } = await sb.from('prospects').delete().eq('id', id).select('id');
+      confirm.disabled = false;
+      confirm.textContent = 'Elimina';
+      if (err || !data?.length) {
+        // Nessuna riga cancellata senza errore = permesso negato dal database (RLS)
+        error.textContent = err
+          ? 'Non sono riuscito a eliminarlo. Controlla la connessione e riprova.'
+          : 'Il database non permette di eliminare questo prospect.';
+        error.hidden = false;
+        return;
+      }
+      dirty = false;
+      setFlash(`Eliminato ${nome}.`);
+      dialog.close();
+      location.hash = '#/lista';
+    });
   }
 
   // ---------- azioni ----------

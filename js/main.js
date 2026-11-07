@@ -3,9 +3,12 @@ import { sb } from './supabase.js';
 import { signIn, signOut, loadProfile, loginErrorMessage } from './auth.js';
 import { route, startRouter, stopRouter } from './router.js';
 import { clearLookups } from './lookups.js';
+import { setupKeyboardDismiss } from './keyboard.js';
 import oggi from './views/oggi.js';
 import lista from './views/lista.js';
 import scheda from './views/scheda.js';
+
+setupKeyboardDismiss();
 
 route(/^\/oggi$/, 'oggi', oggi);
 route(/^\/lista$/, 'lista', lista);

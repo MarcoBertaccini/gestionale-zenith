@@ -947,6 +947,29 @@ textarea {
   .tag-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+/* ---------- Eliminazione ---------- */
+
+.scheda-main { display: grid; gap: var(--space-5); align-content: start; }
+
+.danger-zone {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid #EBC9C5;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.danger-zone .section-title { color: var(--ink); }
+.danger-zone .btn { margin-top: var(--space-1); }
+
+.btn-danger { background: var(--late); color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #921C13; }
+.btn-danger-outline { border-color: #E3B4AF; background: var(--surface); color: var(--late); }
+.btn-danger-outline:hover { background: var(--late-soft); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

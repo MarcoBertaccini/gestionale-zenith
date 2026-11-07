@@ -1,7 +1,7 @@
 // Lista prospect: ricerca, filtri e creazione di un nuovo prospect.
 import { h, pageHeader } from '../dom.js';
 import { formatDate, todayISO } from '../format.js';
-import { STATI, statoBadge, callButton, skeleton, errorBox, normalize } from '../ui.js';
+import { STATI, statoBadge, callButton, skeleton, errorBox, normalize, takeFlash } from '../ui.js';
 import { getTagSito, getOrigini, getProfili } from '../lookups.js';
 
 const FILTRI_KEY = 'zenith-lista-filtri';
@@ -32,6 +32,8 @@ export default async function lista(main, { sb, state }) {
   const panel = h('div', { class: 'filters', id: 'lista-filtri', hidden: true });
 
   const status = h('div', { class: 'list-status', role: 'status' });
+  const flash = takeFlash();
+  if (flash) status.append(h('p', { class: 'notice' }, flash));
   const content = h('div', { class: 'list-content' });
 
   main.append(
