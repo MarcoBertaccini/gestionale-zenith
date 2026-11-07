@@ -563,14 +563,151 @@ input[aria-invalid="true"] { border-color: var(--late); }
 .skeleton-call { width: 112px; height: var(--tap); border-radius: var(--radius-sm); }
 
 @media (min-width: 900px) {
-  .row-city:empty { display: block; }
+  .row-city:empty, .row-action:empty { display: block; }
   .row { padding-block: 6px; }
   .row-main { padding-block: var(--space-2); }
   .row-main {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 2fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr) minmax(0, 2fr);
     align-items: center;
     gap: var(--space-4);
   }
+}
+
+/* ---------- Lista prospect ---------- */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.page-head-row .btn-primary { flex: none; padding: 0 var(--space-4); }
+
+.search-row {
+  display: flex;
+  gap: var(--space-2);
+}
+.search-row input { flex: 1; min-width: 0; }
+.filter-toggle { flex: none; padding: 0 var(--space-4); }
+.filter-toggle[aria-expanded="true"] { background: var(--accent-soft); }
+
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.filters select {
+  min-width: 0;
+  padding-right: var(--space-2);
+  text-overflow: ellipsis;
+}
+
+.filter-summary {
+  display: flex;
+  justify-content: flex-end;
+  min-height: var(--space-3);
+}
+.filter-summary .btn-quiet { margin: var(--space-1) calc(var(--space-3) * -1) 0 0; color: var(--accent); }
+
+.list-status:empty { display: none; }
+.notice {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+.notice a { color: var(--accent); font-weight: 600; }
+
+.row-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+.row-place {
+  overflow: hidden;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.row-action:empty { display: none; }
+.row-date { color: var(--muted); }
+
+.badge {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #E9EDF0;
+  color: #3D4A55;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.badge-interessato,
+.badge-demo_inviata,
+.badge-trattativa { background: var(--accent-soft); color: var(--accent); }
+.badge-non_risponde { background: #FCF1DE; color: #7A4B00; }
+.badge-vinto { background: #E2F2E6; color: #1D6B34; }
+.badge-perso { background: #EEF0F2; color: #6A757E; }
+
+/* ---------- Dialog (foglio dal basso sul telefono) ---------- */
+
+.sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100dvh - var(--safe-top) - var(--space-5));
+  margin: auto auto 0;
+  padding: var(--space-5) calc(var(--space-4) + var(--safe-right)) calc(var(--space-5) + var(--safe-bottom)) calc(var(--space-4) + var(--safe-left));
+  border: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  overflow-y: auto;
+}
+.sheet::backdrop { background: rgba(22, 32, 42, 0.45); }
+.sheet-title { margin-bottom: var(--space-4); font-size: var(--text-lg); font-weight: 700; }
+
+.form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.form-2col .field { min-width: 0; }
+.field-hint { color: #7A4B00; font-size: var(--text-sm); }
+.form-note { color: var(--muted); font-size: var(--text-sm); }
+
+.dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+@media (min-width: 900px) {
+  .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sheet {
+    margin: auto;
+    padding: var(--space-6);
+    border-radius: var(--radius);
+  }
+  .dialog-actions { display: flex; justify-content: flex-end; }
 }
 
 @media (prefers-reduced-motion: reduce) {
