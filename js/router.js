@@ -3,6 +3,8 @@
 const routes = [];
 let ctxRef = null;
 let firstRender = true;
+let cleanup = null;   // funzione di pulizia della schermata corrente
+let renderSeq = 0;    // scarta i render superati da un cambio pagina più recente
 
 export function route(pattern, nav, view) {
   routes.push({ pattern, nav, view });
@@ -28,7 +30,15 @@ export function startRouter(ctx) {
 
 export function stopRouter() {
   window.removeEventListener('hashchange', render);
+  runCleanup();
   ctxRef = null;
+}
+
+function runCleanup() {
+  if (cleanup) {
+    try { cleanup(); } catch { /* ignora */ }
+    cleanup = null;
+  }
 }
 
 async function render() {
@@ -52,13 +62,19 @@ async function render() {
     else a.removeAttribute('aria-current');
   }
 
+  runCleanup();
+  const seq = ++renderSeq;
   main.replaceChildren();
   main.setAttribute('aria-busy', 'true');
   try {
-    const title = await r.view(main, { ...ctxRef, params: m.slice(1) });
+    // Una schermata restituisce il titolo, oppure { title, cleanup }
+    const result = await r.view(main, { ...ctxRef, params: m.slice(1) });
+    const title = typeof result === 'string' ? result : result?.title;
+    if (seq !== renderSeq) { result?.cleanup?.(); return; }
+    cleanup = result?.cleanup ?? null;
     document.title = title ? `${title} – Gestionale Zenith` : 'Gestionale Zenith';
   } finally {
-    main.removeAttribute('aria-busy');
+    if (seq === renderSeq) main.removeAttribute('aria-busy');
   }
 
   // Dopo un cambio pagina il focus va al contenuto (per lettori di schermo e tastiera)
