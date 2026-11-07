@@ -2,6 +2,7 @@
 import { sb } from './supabase.js';
 import { signIn, signOut, loadProfile, loginErrorMessage } from './auth.js';
 import { route, startRouter, stopRouter } from './router.js';
+import { clearLookups } from './lookups.js';
 import oggi from './views/oggi.js';
 import lista from './views/lista.js';
 import scheda from './views/scheda.js';
@@ -101,6 +102,8 @@ $('logout').addEventListener('click', async (event) => {
 
 function showLogin() {
   stopRouter();
+  clearLookups();
+  try { sessionStorage.removeItem('zenith-lista-filtri'); } catch { /* ignora */ }
   state.user = null;
   state.profile = null;
   boot.hidden = true;

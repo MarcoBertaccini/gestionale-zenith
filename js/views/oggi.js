@@ -1,6 +1,7 @@
 // Schermata Oggi: prospect in ritardo (in rosso) e da sentire oggi.
 import { h, pageHeader } from '../dom.js';
 import { formatDate, todayISO } from '../format.js';
+import { callButton, skeleton, errorBox } from '../ui.js';
 
 const CHIUSI = '(vinto,perso)';
 
@@ -121,7 +122,6 @@ function section(id, title, rows, late) {
 }
 
 function row(p, late) {
-  const tel = telHref(p.telefono);
   const action = p.prossima_azione?.trim() || 'Nessuna azione indicata';
 
   return h('li', { class: `row${late ? ' row-late' : ''}` },
@@ -133,45 +133,6 @@ function row(p, late) {
         late ? h('span', { class: 'row-late-date tabular' }, `dal ${formatDate(p.prossima_azione_data)}`) : null,
       ),
     ),
-    tel
-      ? h('a', { class: 'call', href: tel, 'aria-label': `Chiama ${p.nome_attivita}` }, phoneIcon(), h('span', {}, 'Chiama'))
-      : h('span', { class: 'call call-none' }, 'Senza numero'),
+    callButton(p),
   );
-}
-
-function skeleton() {
-  return h('div', { class: 'skeleton', 'aria-hidden': 'true' },
-    [0, 1, 2, 3].map(() => h('div', { class: 'skeleton-row' },
-      h('div', { class: 'skeleton-lines' }, h('span'), h('span'), h('span')),
-      h('div', { class: 'skeleton-call' }),
-    )),
-  );
-}
-
-function errorBox(retry) {
-  return h('div', { class: 'empty empty-error', role: 'alert' },
-    h('p', { class: 'empty-title' }, 'Non riesco a caricare i prospect.'),
-    h('p', {}, 'Controlla la connessione e riprova.'),
-    h('button', { type: 'button', class: 'btn btn-secondary', onclick: retry }, 'Riprova'),
-  );
-}
-
-function phoneIcon() {
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', '20');
-  svg.setAttribute('height', '20');
-  svg.setAttribute('aria-hidden', 'true');
-  const path = document.createElementNS(ns, 'path');
-  path.setAttribute('d', 'M6.6 3.5h2.6l1.4 4-2 1.3a12 12 0 0 0 6.6 6.6l1.3-2 4 1.4v2.6a2 2 0 0 1-2.2 2A17 17 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2Z');
-  svg.append(path);
-  return svg;
-}
-
-/** "0544 123 456" → "tel:0544123456". Null se non c'è un numero utilizzabile. */
-export function telHref(raw) {
-  if (!raw) return null;
-  const cleaned = raw.trim().replace(/^00/, '+').replace(/(?!^\+)[^\d]/g, '');
-  return cleaned.replace(/\D/g, '').length >= 5 ? `tel:${cleaned}` : null;
 }
