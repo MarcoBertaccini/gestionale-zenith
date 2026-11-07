@@ -19,7 +19,7 @@ Il database è già creato, popolato e testato. Code costruisce solo l'interfacc
 	•	Progetto Supabase: zenith-studio
 	•	URL: https://xrpexwjpljqwgsynxpja.supabase.co
 	•	Chiave publishable (pubblica, va nel frontend): sb_publishable_by17IPWZl-4UsI6uy8WQ5w_Xz3oBKAb
-	•	Utenti già creati: Marco (marco.bertaccini9@gmail.com) e Sara (saramazzani@gmail.com). Registrazione pubblica disattivata.
+	•	Utenti già creati: Marco e Sara. Registrazione pubblica disattivata.
 	•	Dati: 61 prospect importati da Da_chiamare_Ravenna (stato Da chiamare, non assegnati, senza data).
 	•	Valori fissi, RLS, trigger e funzione registra_chiamata già attivi.
 
