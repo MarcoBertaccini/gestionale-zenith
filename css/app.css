@@ -970,6 +970,24 @@ textarea {
 .btn-danger-outline { border-color: #E3B4AF; background: var(--surface); color: var(--late); }
 .btn-danger-outline:hover { background: var(--late-soft); }
 
+/* ---------- Sezione Email (Scheda) ---------- */
+
+.email-box { display: grid; gap: var(--space-2); grid-column: 1 / -1; }
+[data-group="email"] .group-fields > .field { grid-column: 1 / -1; }
+.email-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.email-sent {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  background: #E2F2E6;
+  color: #1D6B34;
+  font-weight: 600;
+}
+.field-hint-muted { color: var(--muted); font-size: var(--text-sm); }
+.event-email strong { color: var(--accent); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

@@ -5,9 +5,9 @@ import { STATI, statoBadge, callButton, skeleton, errorBox, normalize, takeFlash
 import { getTagSito, getOrigini, getProfili } from '../lookups.js';
 
 const FILTRI_KEY = 'zenith-lista-filtri';
-const FILTRI_VUOTI = { q: '', stato: '', citta: '', settore: '', tag: '', origine: '', assegnato: '' };
+const FILTRI_VUOTI = { q: '', stato: '', citta: '', settore: '', tag: '', origine: '', assegnato: '', email: '' };
 const CHIUSI = new Set(['vinto', 'perso']);
-const COLONNE = 'id, nome_attivita, citta, settore, telefono, stato, prossima_azione, prossima_azione_data, assegnato_a, origine_id, prospect_tag(tag_id)';
+const COLONNE = 'id, nome_attivita, citta, settore, telefono, stato, prossima_azione, prossima_azione_data, assegnato_a, origine_id, email_testo, email_inviata_il, prospect_tag(tag_id)';
 
 export default async function lista(main, { sb, state }) {
   let rows = [];
@@ -76,7 +76,7 @@ export default async function lista(main, { sb, state }) {
   }
 
   function activeCount() {
-    return ['stato', 'citta', 'settore', 'tag', 'origine', 'assegnato'].filter((k) => filtri[k]).length;
+    return ['stato', 'citta', 'settore', 'tag', 'origine', 'assegnato', 'email'].filter((k) => filtri[k]).length;
   }
 
   function saveAndRender() {
@@ -126,6 +126,7 @@ export default async function lista(main, { sb, state }) {
       ['tag', 'Problema del sito', lookups.tag.map((t) => [String(t.id), t.nome])],
       ['origine', 'Origine', lookups.origini.map((o) => [String(o.id), o.nome])],
       ['assegnato', 'Assegnato a', assegnati.map((a) => [a.id, a.nome])],
+      ['email', 'Email', [['bozza', 'Bozza pronta']]],
     ];
 
     panel.replaceChildren(...defs.map(([key, label, options]) => {
@@ -151,6 +152,8 @@ export default async function lista(main, { sb, state }) {
     if (filtri.tag && !r.prospect_tag?.some((t) => String(t.tag_id) === filtri.tag)) return false;
     if (filtri.origine && String(r.origine_id) !== filtri.origine) return false;
     if (filtri.assegnato === 'none' && r.assegnato_a) return false;
+    // Bozza pronta: testo email presente e non ancora inviata
+    if (filtri.email === 'bozza' && !(r.email_testo?.trim() && !r.email_inviata_il)) return false;
     if (filtri.assegnato && filtri.assegnato !== 'none' && r.assegnato_a !== filtri.assegnato) return false;
     return true;
   }

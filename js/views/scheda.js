@@ -1,6 +1,6 @@
 // Scheda prospect: dati modificabili per gruppi, storico, azioni.
 import { h } from '../dom.js';
-import { formatDate, formatDateTime, todayISO } from '../format.js';
+import { formatDate, formatTime, formatDateTime, todayISO } from '../format.js';
 import { STATI, statoBadge, statoNome, errorBox, phoneIcon, telHref, openSheet, setFlash } from '../ui.js';
 import { getEsiti, getMotiviPerso, getOrigini, getTagSito, getProfili } from '../lookups.js';
 import { registraChiamata, segnaDemoInviata, aggiungiNota } from './scheda-azioni.js';
@@ -31,6 +31,10 @@ const GRUPPI = [
     ['prezzo_proposto', 'Prezzo proposto (€)', 'number'],
     ['tentativi_senza_risposta', 'Tentativi senza risposta', 'readonly'],
   ] },
+  { id: 'email', titolo: 'Email', campi: [
+    ['email_oggetto', 'Oggetto', 'text'],
+    ['email_testo', 'Testo', 'textarea'],
+  ] },
   { id: 'origine', titolo: 'Origine', campi: [
     ['origine_id', 'Origine', 'origine'],
     ['lead_id', 'Richiesta dal sito', 'lead'],
@@ -59,6 +63,7 @@ export default async function scheda(main, { sb, params }) {
   let lk = null; // valori fissi
   let openGroups = new Set(['anagrafica', 'vendita']);
   let dirty = false;
+  let firstRender = true;
 
   const root = h('div', { class: 'scheda' });
   main.append(root);
@@ -172,7 +177,7 @@ export default async function scheda(main, { sb, params }) {
     const autore = ev.autore_id ? (lk.profili.find((p) => p.id === ev.autore_id)?.nome || 'Utente') : 'Automatico';
     const titolo = ev.tipo === 'chiamata'
       ? `Chiamata${esito ? `: ${esito.nome}` : ''}`
-      : ev.tipo === 'nota' ? 'Nota' : 'Sistema';
+      : { nota: 'Nota', email: 'Email', sistema: 'Sistema' }[ev.tipo] ?? ev.tipo;
     return h('li', { class: `event event-${ev.tipo}` },
       h('p', { class: 'event-head' },
         h('strong', {}, titolo),
@@ -184,6 +189,12 @@ export default async function scheda(main, { sb, params }) {
   function buildForm() {
     const controls = {};
     const original = {};
+
+    // Alla prima apertura, una bozza email pronta e non inviata apre la sua sezione
+    if (firstRender) {
+      firstRender = false;
+      if (prospect.email_testo?.trim() && !prospect.email_inviata_il) openGroups.add('email');
+    }
 
     const groups = GRUPPI.map((g) => {
       const fields = g.campi.map(([key, label, type]) => {
@@ -205,6 +216,13 @@ export default async function scheda(main, { sb, params }) {
     const demoGroup = groups.find((d) => d.dataset.group === 'demo');
     const motivoField = controls.motivo_perso_id.el;
 
+    // Sezione Email: visibile solo se c'è un testo salvato
+    const emailGroup = groups.find((d) => d.dataset.group === 'email');
+    emailGroup.hidden = !prospect.email_testo?.trim();
+    controls.email_testo.input.rows = 8;
+    const emailBox = emailActions(controls);
+    emailGroup.querySelector('.group-fields').append(emailBox.el);
+
     const error = h('p', { class: 'form-error', id: 'scheda-error', role: 'alert', hidden: true });
     const saveBtn = h('button', { type: 'submit', class: 'btn btn-primary' }, 'Salva modifiche');
     const undoBtn = h('button', { type: 'button', class: 'btn btn-secondary' }, 'Annulla');
@@ -224,6 +242,7 @@ export default async function scheda(main, { sb, params }) {
 
     function refreshDirty() {
       dirty = Object.keys(controls).some((k) => !same(controls[k].get(), original[k]));
+      emailBox.update();
       saveBar.hidden = !dirty;
       document.querySelector('.action-bar')?.toggleAttribute('hidden', dirty);
     }
@@ -291,7 +310,60 @@ export default async function scheda(main, { sb, params }) {
     });
 
     refreshVisibility();
+    emailBox.update();
     return form;
+  }
+
+  // Bottoni della sezione Email: Apri in Mail e Segna come inviata
+  function emailActions(controls) {
+    const mailLink = h('a', { class: 'btn btn-secondary' }, mailIcon(), 'Apri in Mail');
+    const noEmail = h('p', { class: 'field-hint-muted', hidden: true },
+      'Manca l’indirizzo email del prospect: aggiungilo in Anagrafica.');
+    const error = h('p', { class: 'form-error', role: 'alert', hidden: true });
+
+    let sentEl;
+    let sendBtn = null;
+    if (prospect.email_inviata_il) {
+      sentEl = h('p', { class: 'email-sent tabular' },
+        `Inviata il ${formatDate(prospect.email_inviata_il)} alle ${formatTime(prospect.email_inviata_il)}`);
+    } else {
+      sendBtn = h('button', { type: 'button', class: 'btn btn-primary' }, 'Segna come inviata');
+      sendBtn.addEventListener('click', async () => {
+        error.hidden = true;
+        if (dirty) {
+          error.textContent = 'Salva prima le modifiche, poi segna l’email come inviata.';
+          error.hidden = false;
+          return;
+        }
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Salvataggio…';
+        const { error: err } = await sb.rpc('segna_email_inviata', { p_prospect_id: id });
+        if (err) {
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Segna come inviata';
+          error.textContent = 'Non segnata. Controlla la connessione e riprova.';
+          error.hidden = false;
+          return;
+        }
+        await load({ text: 'Email segnata come inviata.' });
+      });
+      sentEl = sendBtn;
+    }
+
+    const el = h('div', { class: 'email-box' },
+      h('div', { class: 'email-actions' }, mailLink, sentEl),
+      noEmail, error);
+
+    return {
+      el,
+      // Il link mailto usa sempre i valori attuali dei campi, anche non salvati
+      update() {
+        const to = controls.email.get();
+        mailLink.hidden = !to;
+        noEmail.hidden = Boolean(to);
+        if (to) mailLink.href = mailtoHref(to, controls.email_oggetto.get(), controls.email_testo.get());
+      },
+    };
   }
 
   function makeControl(key, label, type) {
@@ -476,6 +548,30 @@ function fieldLink(key, v) {
   if (key === 'email') return h('a', { class: 'field-link', href: `mailto:${v}` }, 'Scrivi un’email');
   const url = /^https?:\/\//i.test(v) ? v : `https://${v}`;
   return h('a', { class: 'field-link', href: url, target: '_blank', rel: 'noopener noreferrer' }, 'Apri il sito');
+}
+
+/** mailto: con destinatario, oggetto e testo codificati per URL (a capo come CRLF). */
+export function mailtoHref(to, subject, body) {
+  const enc = (v) => encodeURIComponent((v ?? '').replace(/\r?\n/g, '\r\n'));
+  const addr = encodeURIComponent(to.trim()).replace(/%40/g, '@');
+  const params = [];
+  if (subject) params.push(`subject=${enc(subject)}`);
+  if (body) params.push(`body=${enc(body)}`);
+  return `mailto:${addr}${params.length ? `?${params.join('&')}` : ''}`;
+}
+
+function mailIcon() {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '18');
+  svg.setAttribute('height', '18');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', 'icon');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', 'M3.5 6.5h17v11h-17zM3.5 7l8.5 6.5L20.5 7');
+  svg.append(path);
+  return svg;
 }
 
 function same(a, b) {
