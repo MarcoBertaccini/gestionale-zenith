@@ -651,6 +651,7 @@ input[aria-invalid="true"] { border-color: var(--late); }
   text-overflow: ellipsis;
 }
 .row-action:empty { display: none; }
+.row-email { flex-basis: 100%; color: var(--muted); font-size: 0.8125rem; }
 .row-date { color: var(--muted); }
 
 .badge {

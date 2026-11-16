@@ -126,7 +126,7 @@ export default async function lista(main, { sb, state }) {
       ['tag', 'Problema del sito', lookups.tag.map((t) => [String(t.id), t.nome])],
       ['origine', 'Origine', lookups.origini.map((o) => [String(o.id), o.nome])],
       ['assegnato', 'Assegnato a', assegnati.map((a) => [a.id, a.nome])],
-      ['email', 'Email', [['bozza', 'Bozza pronta']]],
+      ['email', 'Email', [['bozza', 'Bozza pronta'], ['inviata', 'Inviata']]],
     ];
 
     panel.replaceChildren(...defs.map(([key, label, options]) => {
@@ -154,6 +154,8 @@ export default async function lista(main, { sb, state }) {
     if (filtri.assegnato === 'none' && r.assegnato_a) return false;
     // Bozza pronta: testo email presente e non ancora inviata
     if (filtri.email === 'bozza' && !(r.email_testo?.trim() && !r.email_inviata_il)) return false;
+    // Inviata: c'è una data di invio
+    if (filtri.email === 'inviata' && !r.email_inviata_il) return false;
     if (filtri.assegnato && filtri.assegnato !== 'none' && r.assegnato_a !== filtri.assegnato) return false;
     return true;
   }
@@ -162,6 +164,8 @@ export default async function lista(main, { sb, state }) {
   function renderList() {
     if (!content.isConnected || content.getAttribute('aria-busy')) return;
     const visible = rows.filter(matches);
+    // Con il filtro Inviata: dal più recente invio
+    if (filtri.email === 'inviata') visible.sort((a, b) => Date.parse(b.email_inviata_il) - Date.parse(a.email_inviata_il));
     const filtered = filtri.q || activeCount();
     countText.textContent = filtered
       ? `${visible.length} di ${rows.length} prospect`
@@ -238,6 +242,9 @@ function listRow(r, today) {
         r.prossima_azione_data
           ? h('span', { class: `tabular ${late ? 'row-late-date' : 'row-date'}` },
               late ? `dal ${formatDate(r.prossima_azione_data)}` : formatDate(r.prossima_azione_data))
+          : null,
+        r.email_inviata_il
+          ? h('span', { class: 'row-email tabular' }, `Email inviata il ${formatDate(r.email_inviata_il)}`)
           : null),
     ),
     callButton(r),
