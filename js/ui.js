@@ -98,3 +98,19 @@ export function field(id, label, input, ...extra) {
 let flash = null;
 export const setFlash = (msg) => { flash = msg; };
 export const takeFlash = () => { const f = flash; flash = null; return f; };
+
+/** Il motivo perso è "altro"? Riconosciuto dal nome nella tabella motivi_perso, non dall'id. */
+export function isMotivoAltro(motivoId, motivi) {
+  if (motivoId == null || motivoId === '') return false;
+  const m = motivi.find((x) => x.id === Number(motivoId));
+  return normalize(m?.nome) === 'altro';
+}
+
+/** Testo del motivo perso: "Prezzo", oppure "Altro: <nota>" quando c'è la nota. */
+export function motivoPersoTesto(prospect, motivi) {
+  const m = motivi.find((x) => x.id === prospect.motivo_perso_id);
+  if (!m) return null;
+  const nome = m.nome.charAt(0).toUpperCase() + m.nome.slice(1);
+  const nota = prospect.motivo_perso_nota?.trim();
+  return isMotivoAltro(m.id, motivi) && nota ? `${nome}: ${nota}` : nome;
+}

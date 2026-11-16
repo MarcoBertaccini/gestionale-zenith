@@ -1,7 +1,7 @@
 // Scheda prospect: dati modificabili per gruppi, storico, azioni.
 import { h } from '../dom.js';
 import { formatDate, formatTime, formatDateTime, todayISO } from '../format.js';
-import { STATI, statoBadge, statoNome, errorBox, phoneIcon, telHref, openSheet, setFlash } from '../ui.js';
+import { STATI, statoBadge, statoNome, errorBox, phoneIcon, telHref, openSheet, setFlash, isMotivoAltro, motivoPersoTesto } from '../ui.js';
 import { getEsiti, getMotiviPerso, getOrigini, getTagSito, getProfili } from '../lookups.js';
 import { registraChiamata, segnaDemoInviata, aggiungiNota } from './scheda-azioni.js';
 
@@ -28,6 +28,7 @@ const GRUPPI = [
     ['prossima_azione_data', 'Data prossima azione', 'date'],
     ['assegnato_a', 'Assegnato a', 'profilo'],
     ['motivo_perso_id', 'Motivo perso', 'motivo'],
+    ['motivo_perso_nota', 'Perché?', 'text'],
     ['prezzo_proposto', 'Prezzo proposto (€)', 'number'],
     ['tentativi_senza_risposta', 'Tentativi senza risposta', 'readonly'],
   ] },
@@ -138,6 +139,10 @@ export default async function scheda(main, { sb, params }) {
                   late ? `in ritardo, era per il ${formatDate(prospect.prossima_azione_data)}` : formatDate(prospect.prossima_azione_data))
               : null)
         : h('p', { class: 'next-text next-none' }, CHIUSI.has(prospect.stato) ? `Chiuso: ${statoNome(prospect.stato)}` : 'Nessuna azione in programma'),
+      // Perso: motivo seguito dalla nota (es. "Altro: ha un nipote che fa siti")
+      prospect.stato === 'perso' && motivoPersoTesto(prospect, lk.motivi)
+        ? h('p', { class: 'next-reason' }, motivoPersoTesto(prospect, lk.motivi))
+        : null,
       prospect.stato === 'interessato'
         ? h('button', { type: 'button', class: 'btn btn-secondary btn-block', onclick: onDemoInviata }, 'Segna demo inviata')
         : null);
@@ -215,6 +220,8 @@ export default async function scheda(main, { sb, params }) {
 
     const demoGroup = groups.find((d) => d.dataset.group === 'demo');
     const motivoField = controls.motivo_perso_id.el;
+    const notaPersoField = controls.motivo_perso_nota.el;
+    const motivoAltro = () => isMotivoAltro(controls.motivo_perso_id.get(), lk.motivi);
 
     // Sezione Email: visibile solo se c'è un testo salvato
     const emailGroup = groups.find((d) => d.dataset.group === 'email');
@@ -238,6 +245,8 @@ export default async function scheda(main, { sb, params }) {
       const demoFilled = CAMPI_DEMO.some((k) => controls[k].get());
       demoGroup.hidden = !(STATI_DEMO.has(stato) || demoFilled);
       motivoField.hidden = !(stato === 'perso' || controls.motivo_perso_id.get());
+      // "Perché?" solo quando il motivo scelto è "altro"
+      notaPersoField.hidden = motivoField.hidden || !motivoAltro();
     }
 
     function refreshDirty() {
@@ -272,12 +281,17 @@ export default async function scheda(main, { sb, params }) {
       const prezzo = controls.prezzo_proposto.get();
       if (prezzo != null && (Number.isNaN(prezzo) || prezzo < 0)) return fail('prezzo_proposto', 'Scrivi il prezzo come numero, ad esempio 900.');
       if (controls.stato.get() === 'perso' && !controls.motivo_perso_id.get()) return fail('motivo_perso_id', 'Per segnare un prospect come perso scegli il motivo.');
+      if (motivoAltro() && !controls.motivo_perso_nota.get()) return fail('motivo_perso_nota', 'Con il motivo “altro” scrivi perché è perso.');
 
       const patch = {};
       for (const [k, c] of Object.entries(controls)) {
         if (k === 'tags' || c.readonly) continue;
         if (!same(c.get(), original[k])) patch[k] = c.get();
       }
+      // La nota vale solo con il motivo "altro": negli altri casi va svuotata
+      const notaPerso = motivoAltro() ? controls.motivo_perso_nota.get() : null;
+      if (same(notaPerso, original.motivo_perso_nota)) delete patch.motivo_perso_nota;
+      else patch.motivo_perso_nota = notaPerso;
       const tagsNow = controls.tags.get();
       const tagsBefore = original.tags;
       const added = tagsNow.filter((t) => !tagsBefore.includes(t));
@@ -496,6 +510,10 @@ export default async function scheda(main, { sb, params }) {
     const before = prospect.stato;
     await load();
     let notice = { text: 'Chiamata salvata.' };
+    if (esito.notaPersoNonSalvata) {
+      render({ text: 'Chiamata salvata, ma il “Perché?” non è stato salvato. Scrivilo in Vendita e salva.', warn: true });
+      return;
+    }
     if (prospect.stato === 'perso' && esito.incrementa_tentativi && before !== 'perso') {
       notice = { text: 'Terzo tentativo senza risposta: il prospect è passato a Perso (irraggiungibile).', warn: true };
     } else if (esito.stato_dopo === 'interessato') {

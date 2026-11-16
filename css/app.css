@@ -764,6 +764,7 @@ textarea {
 .next-date { color: var(--muted); font-size: var(--text-base); font-weight: 500; }
 .next-late .next-date { color: var(--late); font-weight: 600; }
 .next-none { color: var(--muted); font-size: var(--text-base); font-weight: 500; }
+.next-reason { color: var(--ink); overflow-wrap: anywhere; }
 .next-card .btn { margin-top: var(--space-2); }
 
 /* Barra azioni: fissa sopra la nav sul telefono */

@@ -1,7 +1,7 @@
 // Azioni della scheda: Registra chiamata, Segna demo inviata, Aggiungi nota.
 import { h } from '../dom.js';
 import { addDaysISO } from '../format.js';
-import { openSheet, field, statoNome } from '../ui.js';
+import { openSheet, field, statoNome, isMotivoAltro } from '../ui.js';
 
 const MAX_TENTATIVI = 3; // al 3° "Non risponde" la funzione registra_chiamata chiude come Perso
 
@@ -38,6 +38,16 @@ export function registraChiamata({ sb, prospect, esiti, motivi }) {
       h('option', { value: '' }, 'Scegli il motivo'),
       motivi.map((m) => h('option', { value: String(m.id) }, m.nome)));
     const motivoBox = field('rc-motivo', 'Motivo (obbligatorio)', motivo);
+    // "Perché?" obbligatorio quando il motivo è "altro" (riconosciuto dal nome)
+    const perche = h('input', { id: 'rc-perche', autocomplete: 'off', 'aria-describedby': 'rc-error' });
+    const percheBox = field('rc-perche', 'Perché?', perche);
+    percheBox.hidden = true;
+    perche.addEventListener('input', () => perche.removeAttribute('aria-invalid'));
+    const motivoAltro = () => isMotivoAltro(motivo.value, motivi);
+    motivo.addEventListener('change', () => {
+      motivo.removeAttribute('aria-invalid');
+      percheBox.hidden = !motivoAltro();
+    });
 
     const prezzo = h('input', { id: 'rc-prezzo', type: 'number', inputmode: 'decimal', min: '0', step: '0.01' });
     const prezzoBox = field('rc-prezzo', 'Prezzo proposto (€)', prezzo);
@@ -46,7 +56,7 @@ export function registraChiamata({ sb, prospect, esiti, motivi }) {
     const notaBox = field('rc-nota', 'Nota (facoltativa)', nota);
 
     const details = h('div', { class: 'form', hidden: true },
-      statoInfo, avviso, azioneBox, motivoBox, prezzoBox, notaBox);
+      statoInfo, avviso, azioneBox, motivoBox, percheBox, prezzoBox, notaBox);
 
     const error = h('p', { class: 'form-error', id: 'rc-error', role: 'alert', hidden: true });
     const submit = h('button', { type: 'submit', class: 'btn btn-primary', disabled: true }, 'Salva chiamata');
@@ -92,6 +102,7 @@ export function registraChiamata({ sb, prospect, esiti, motivi }) {
       motivoBox.hidden = !e.richiede_motivo;
       if (!e.richiede_motivo) motivo.value = '';
       motivo.removeAttribute('aria-invalid');
+      percheBox.hidden = !e.richiede_motivo || !motivoAltro();
 
       // "Accetta": chiedere il prezzo se manca
       const chiediPrezzo = e.stato_dopo === 'vinto' && prospect.prezzo_proposto == null;
@@ -115,6 +126,14 @@ export function registraChiamata({ sb, prospect, esiti, motivi }) {
         motivo.focus();
         return;
       }
+      if (esito.richiede_motivo && motivoAltro() && !perche.value.trim()) {
+        perche.setAttribute('aria-invalid', 'true');
+        error.textContent = 'Con il motivo “altro” scrivi perché è perso.';
+        error.hidden = false;
+        perche.focus();
+        return;
+      }
+      perche.removeAttribute('aria-invalid');
       const hasAzione = !azioneBox.hidden;
       if (hasAzione && azione.value.trim() && !data.value) {
         error.textContent = 'Scegli la data della prossima azione.';
@@ -141,15 +160,26 @@ export function registraChiamata({ sb, prospect, esiti, motivi }) {
         p_motivo_perso_id: esito.richiede_motivo ? Number(motivo.value) : null,
         p_prezzo_proposto: prezzoVal,
       });
-      submit.disabled = false;
-      submit.textContent = 'Salva chiamata';
 
       if (err) {
+        submit.disabled = false;
+        submit.textContent = 'Salva chiamata';
         error.textContent = 'Chiamata non salvata. Controlla la connessione e riprova.';
         error.hidden = false;
         return;
       }
       saved = esito;
+
+      // registra_chiamata non accetta la nota: la salva un update subito dopo.
+      // Se il motivo non è "altro" la svuota, così non resta una nota vecchia.
+      if (esito.richiede_motivo) {
+        const notaPerso = motivoAltro() ? perche.value.trim() : null;
+        const { error: errNota } = await sb.from('prospects')
+          .update({ motivo_perso_nota: notaPerso }).eq('id', prospect.id);
+        if (errNota) saved = { ...esito, notaPersoNonSalvata: true };
+      }
+      submit.disabled = false;
+      submit.textContent = 'Salva chiamata';
       dialog.close();
     });
   });
